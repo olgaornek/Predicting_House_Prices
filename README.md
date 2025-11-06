@@ -1,7 +1,7 @@
 # Predicting_House_Prices
 The accurate prediction of housing prices is a significant issue for buyers, sellers and investors in real estate. A good model can make sure people can be smarter about their decisions, reduce risk and increase confidence in the market. 
 
-In this work, some popular algorithms such as Linear Regression, Random Forest and K-Nearest Neighbors  were implemented and compare don the Kaggle housing dataset. 
+In this work, some popular algorithms such as Linear Regression, Random Forest and K-Nearest Neighbors  were implemented and compared on the Kaggle housing dataset. 
 
 Data exploration and preprocessing helper, PandasAI, which is an AI assistant, was envolved. 
 
