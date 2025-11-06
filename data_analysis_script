@@ -1,0 +1,58 @@
+# STEP 3: DATA ANALYSIS FOR DATA UNDERSTANDING
+#Display descriptive statistics of the variables
+houseprice_df.describe()
+
+#Inference: We can understand various aspects about each of the variables such as count, mean, std, min, 25% quartile, 50% quartile, 75% quartile and max values
+
+
+  # Plotting the boxplot for house price per unit area
+mean = np.mean(houseprice_df['y_house_price_of_unit_area'])
+q1 = np.percentile(houseprice_df['y_house_price_of_unit_area'], 25)
+q3 = np.percentile(houseprice_df['y_house_price_of_unit_area'], 75)
+min_val = np.min(houseprice_df['y_house_price_of_unit_area'])
+max_val = np.max(houseprice_df['y_house_price_of_unit_area'])
+
+plt.figure(figsize=(8, 4))
+sns.boxplot(x=houseprice_df['y_house_price_of_unit_area'], color='skyblue',)
+plt.title('Boxplot of House Price per Unit Area')
+plt.xlabel('House Price per Unit Area')
+plt.grid(True)
+plt.text(mean, 0.05, f'Mean: {mean:.2f}', ha='center', va='top', color='red', fontweight='bold')
+plt.text(q1, 0.05, f'Q1: {q1:.2f}', ha='center', va='bottom', color='green')
+plt.text(q3, 0.05, f'Q3: {q3:.2f}', ha='center', va='bottom', color='blue')
+plt.text(min_val, -0.05, f'Min: {min_val:.2f}', ha='center', va='top', color='purple')
+plt.text(max_val, -0.05, f'Max: {max_val:.2f}', ha='center', va='top', color='brown')
+plt.show()
+
+#Inference:The boxplot of 411 observations shows a mean of 37.98.
+#A wide range from 7.6 to 117.5 indicates significant variability, while the interquartile range of 18.9 highlights diverse mid-range prices.
+#In this case, the outliers are anything above upper quartile(75). The existence of outliers suggest right skewness, revealing a few highly
+#priced properties that create disparities in the housing market and affect overall price distribution.
+
+
+
+  # Generating and plotting the correlation matrix
+plt.figure(figsize=(10, 8))
+corr_matrix = houseprice_df.corr(numeric_only=True)
+
+sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', fmt=".2f", square=True)
+plt.title("Correlation Heatmap of Numeric Variables")
+plt.show()
+
+#Inference: "transaction_id" and "x1_transaction_date" have low correlation with outcome variable "y_house_price_of_unit_area". Hence, we will NOT
+# be considering these two variables during variable selection for any of the model building process. "x2_house_age" have moderate correlation with outcome
+#variable while all the other potential predictors which are "x3_distance_to_the_nearest_mrt_station", "x4_number_of_convenience_stores",
+#"x5_latitude" and "x6_longitude" have moderate to high correlation with outcome variable. Hence, the remaining variables will be considered during
+#variable selection in the model building processes.
+
+
+
+
+  #Removing "transaction_id" and "x1_transaction_date" columns from houseprice_df
+houseprice_df = houseprice_df.drop(columns=['transaction_id', 'x1_transaction_date'])
+houseprice_df.head()
+
+
+
+
+  
