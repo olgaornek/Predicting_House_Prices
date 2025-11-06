@@ -1,0 +1,68 @@
+import pandas as pd
+from pandasai import SmartDataframe
+from pandasai.llm import OpenAI
+
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.tree import DecisionTreeRegressor, export_text
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error
+
+from sklearn.metrics import r2_score
+from sklearn.model_selection import GridSearchCV
+
+
+# downloading Grahpviz package
+from sklearn import tree
+import graphviz
+
+# Splittig data
+
+house_price.chat('divide the original data frame house_price into two data frames with independent variable X and dependent variable y')
+
+house_price.chat('split y_house_price_of_unit_area and best predictors into training dataset= 60% and validation dataset = 40%')
+
+# Best Hyperparameters
+
+# We will use Hyperparameters parameters that can be fine-tuned to improve the accuracy of our machine learning model.
+# Checking for Best Hyperparameters
+house_price.chat('look at the best hyperparameter combination of max_depth, min_samples_split, min_samples_leaf, max_leaf_nodes, max_features that GridSearchCV has chosen for us')
+
+# max_depth: It denotes the tree’s maximum depth. It supports any int value or “None”. If “None”, nodes are expanded until all leaves are pure or contain fewer than min samples split samples.
+# min_samples_split: It refers to the minimum number of samples needed to split an internal node. It supports any int or float value and the default is 2.
+# min_samples_leaf: It refers to the minimum no. of samples required at the leaf node. By default, it is 1. It can be any int or float value and the default is 1.
+# max_features: It indicates the number of features to be considered in order to find the best split. It can have the values ‘auto,”sqrt,’ ‘log2’, ‘None,’ int, or float. It is set to 1.0 by default.
+
+house_price.chat('create an object of DecisionTreeRegressor with max_depth =30, min_samples_split=2, max_features = log2, max_leaf_nodes= None, min_samples_leaf = 1,   random_state=1')
+
+
+# Training accuracy
+house_price.chat('alculate the training accuracy using the R2 score')
+
+#  training accuracy is very hight = 99,62%
+# Both spreads are almost completely overlapping one another, indicating that training accuracy is actually quite high and also a possibility of some overfitting.
+
+house_price.chat('use a scatter plot to see the training accuracy')
+
+house_price.chat('calculate regression statistic')
+# this time pandasAI calculated testing accuracy againg and gave us different result = 98.78%
+
+house_price.chat('calculate ME, MAE, MPE, MAPE for thaining dataset ')
+
+# Testing accuracy
+house_price.chat('show the testing accuracy')
+
+# Testing accuracy is 
+# There is overfitting in the model. Our training accuracy is between 99-98% while our testing accuracy is 67.71%.
+
+house_price.chat('calculate ME, MPE, MAPE for testing dataset ')
+
+house_price.chat('visualize the testing accuracy of decision tree regressor')
+
+
+
+# Visualizing Regression Decision Tree with Graphviz
+
+# downloading Grahpviz package
+from sklearn import tree
+import graphviz
