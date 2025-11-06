@@ -1,0 +1,510 @@
+#############################
+#STEP 4: PREDICTIVE MODELLING
+#Model 1: Linear Regression
+#Defining predictors and outcome variables for variable selection through backward elimination
+predictors = ['x2_house_age', 'x3_distance_to_the_nearest_mrt_station', 'x4_number_of_convenience_stores', 'x5_latitude', 'x6_longitude']
+outcome = 'y_house_price_of_unit_area'
+
+#Partition data into predictors (x) and output (y)
+X = houseprice_df[predictors]
+y = houseprice_df[outcome]
+
+#Split the data into training and validation datasets. Validation dataset size is 40% of the input datasize
+train_X, valid_X, train_y, valid_y = train_test_split(X,y,test_size=0.4,random_state=1)
+
+#Backward elimination for variable selection
+def train_model(variables):
+  model = LinearRegression()
+  model.fit(train_X[variables], train_y)
+  return model
+def score_model(model, variables):
+  return AIC_score(train_y, model.predict(train_X[variables]), model)
+best_model, best_variables = backward_elimination(train_X.columns, train_model, score_model, verbose=True)
+print(best_variables)
+
+#The optimal parameters are chosen by backward elimination process for this linear regression model/algorithm. The model stats with all available
+#features and it iteratively removes the least significant features using AIC score (Akaike Information Criterion). Once every remaining features
+#are significant, the model stops the process and gives the list of "best variables" where all features are significant in predicting the outcome
+#variable which is "house price of unit area".
+
+
+#Train model on "best_variables"
+best_model.fit(train_X[best_variables], train_y)
+
+#Print coefficients of the selected variables(best_variables)
+for var, coef in zip(best_variables, best_model.coef_):
+  print(f"{var}: {coef}")
+
+
+#Training Data: Predicting using predictor variables selected in backward elimination process
+pred_y = best_model.predict(train_X[best_variables])
+regressionSummary(train_y, pred_y)
+
+result = pd.DataFrame({'Predicted': pred_y,'Actual': train_y,'Residual': train_y - pred_y})
+
+
+# Plot Actual vs Predicted for training data
+plt.figure()
+sns.scatterplot(x=train_y, y=pred_y)
+plt.plot([train_y.min(), train_y.max()], [train_y.min(), train_y.max()], 'r--')
+plt.title(" Training Data: Actual vs Predicted (Linear Regression)")
+plt.xlabel("Actual")
+plt.ylabel("Predicted")
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+
+
+#Plot the actual, predicted and residuals of training data
+fig, ax = plt.subplots()
+ax = train_y.hist()
+ax.set_xlabel('House Price Per Unit Area')
+plt.title("Actual Training Data Distribution - Linear Regression")
+
+fig, ax = plt.subplots()
+ax = result['Predicted'].hist()
+ax.set_xlabel('House Price Per Unit Area')
+plt.title("Predicted Training Data Distribution - Linear Regression")
+
+fig, ax = plt.subplots()
+ax = result['Residual'].hist()
+ax.set_xlabel('Residuals')
+plt.title("Residuals Distribution - Linear Regression")
+plt.show()
+
+
+
+#Validation Data: Predicting using predictor variables selected in backward elimination process
+pred_y = best_model.predict(valid_X[best_variables])
+regressionSummary(valid_y, pred_y)
+
+result = pd.DataFrame({'Predicted': pred_y,'Actual': valid_y,'Residual': valid_y - pred_y})
+
+
+
+# Plot Actual vs Predicted for validation data
+plt.figure()
+sns.scatterplot(x=valid_y, y=pred_y)
+plt.plot([valid_y.min(), valid_y.max()], [valid_y.min(), valid_y.max()], 'r--')
+plt.title(" Validation Data: Actual vs Predicted (Linear Regression)")
+plt.xlabel("Actual")
+plt.ylabel("Predicted")
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+
+
+#Plot the actual, predicted and residuals of validation data
+fig, ax = plt.subplots()
+ax = valid_y.hist()
+ax.set_xlabel('House Price Per Unit Area')
+plt.title("Actual Validation Data Distribution - Linear Regression")
+
+fig, ax = plt.subplots()
+ax = result['Predicted'].hist()
+ax.set_xlabel('House Price Per Unit Area')
+plt.title("Predicted Validation Data Distribution - Linear Regression")
+
+fig, ax = plt.subplots()
+ax = result['Residual'].hist()
+ax.set_xlabel('Residuals')
+plt.title("Residuals Distribution - Linear Regression")
+plt.show()
+
+
+#########################################################
+#Model 2: Random Forest Regressor
+#Defining predictors and outcome variables for variable selection through RFECV
+predictors = ['x2_house_age', 'x3_distance_to_the_nearest_mrt_station', 'x4_number_of_convenience_stores', 'x5_latitude', 'x6_longitude']
+outcome = 'y_house_price_of_unit_area'
+
+#Partition data into predictors (x) and output (y)
+X = houseprice_df[predictors]
+y = houseprice_df[outcome]
+
+#Split the data into training and validation datasets. Validation dataset size is 40% of the input datasize
+train_X, valid_X, train_y, valid_y = train_test_split(X,y,test_size=0.4,random_state=1)
+
+# Define the best parameters for the Random Forest model
+best_params = {
+    "n_estimators": 150,
+    "max_depth": 10,
+    "min_samples_split": 8,
+    "min_samples_leaf": 2,
+    "max_features": 'sqrt'
+}
+
+# Initialize Random Forest Regressor with reasonable params
+rf = RandomForestRegressor(**best_params, random_state=42)
+
+# RFECV: Recursive feature elimination with cross-validation for variable selection
+rfecv = RFECV(
+    estimator=rf,
+    step=1,
+    cv=5,
+    scoring='neg_mean_squared_error',
+    n_jobs=-1
+)
+
+# Fit RFECV on training data
+rfecv.fit(train_X, train_y)
+
+# Get the variables selected through RFECV
+selected_features = train_X.columns[rfecv.support_]
+print("Optimal number of features:", rfecv.n_features_)
+print("Selected features:", list(selected_features))
+
+# The optimal features are chosen by the RFECV process using a Random Forest model.
+# The model starts with all available features and iteratively removes the least important features based on feature importance.
+# At each step, the model performance is evaluated using 5-fold cross-validation with mean squared error as the metric.
+# This process continues until the subset of features that gives the best cross-validated performance is found.
+# The final list of selected features are those that contribute most to accurately predicting the outcome variable,
+# which is the "house price of unit area".
+
+
+
+#Train model on "selected_features"
+rf.fit(train_X[selected_features], train_y)
+
+# Create a DataFrame for feature importance
+feature_importance = pd.DataFrame({
+    "Feature": houseprice_df[predictors].columns,
+    "Importance": rf.feature_importances_
+})
+
+feature_importance = feature_importance.sort_values(by="Importance", ascending=False)
+
+# Plot bar chart for feature importance
+plt.figure(figsize=(10, 5))
+plt.barh(feature_importance["Feature"], feature_importance["Importance"], color="skyblue")
+plt.xlabel("Feature Importance")
+plt.ylabel("Features")
+plt.title("Feature Importance in Random Forest Regressor Model")
+plt.gca().invert_yaxis()
+
+
+
+#Training Data: Predicting using "selected_features"
+pred_y = rf.predict(train_X[selected_features])
+regressionSummary(train_y, pred_y)
+
+result = pd.DataFrame({'Predicted': pred_y,'Actual': train_y,'Residual': train_y - pred_y})
+
+
+# Plot Actual vs Predicted for training data
+plt.figure()
+sns.scatterplot(x=train_y, y=pred_y)
+plt.plot([train_y.min(), train_y.max()], [train_y.min(), train_y.max()], 'r--')
+plt.title(" Training Data: Actual vs Predicted (Random Forest Regressor)")
+plt.xlabel("Actual")
+plt.ylabel("Predicted")
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+
+
+#Plot the actual, predicted and residuals of training data
+fig, ax = plt.subplots()
+ax = train_y.hist()
+ax.set_xlabel('House Price Per Unit Area')
+plt.title("Actual Training Data Distribution - Random Forest Regressor")
+
+fig, ax = plt.subplots()
+ax = result['Predicted'].hist()
+ax.set_xlabel('House Price Per Unit Area')
+plt.title("Predicted Training Data Distribution - Random Forest Regressor")
+
+fig, ax = plt.subplots()
+ax = result['Residual'].hist()
+ax.set_xlabel('Residuals')
+plt.title("Residuals Distribution - Random Forest Regressor")
+plt.show()
+
+
+
+#Validation Data: Predicting using "selected_features"
+pred_y = rf.predict(valid_X[selected_features])
+regressionSummary(valid_y, pred_y)
+
+result = pd.DataFrame({'Predicted': pred_y,'Actual': valid_y,'Residual': valid_y - pred_y})
+
+
+# Plot Actual vs Predicted for validation data
+plt.figure()
+sns.scatterplot(x=valid_y, y=pred_y)
+plt.plot([valid_y.min(), valid_y.max()], [valid_y.min(), valid_y.max()], 'r--', label = "Regression Line")
+plt.title(" Validation Data: Actual vs Predicted (Random Forest Regressor)")
+plt.xlabel("Actual")
+plt.ylabel("Predicted")
+plt.grid(True)
+plt.tight_layout()
+plt.show()
+
+
+
+#Plot the actual, predicted and residuals of validation data
+fig, ax = plt.subplots()
+ax = valid_y.hist()
+ax.set_xlabel('House Price Per Unit Area')
+plt.title("Actual Validation Data Distribution - Random Forest Regressor")
+
+fig, ax = plt.subplots()
+ax = result['Predicted'].hist()
+ax.set_xlabel('House Price Per Unit Area')
+plt.title("Predicted Validation Data Distribution - Random Forest Regressor")
+
+fig, ax = plt.subplots()
+ax = result['Residual'].hist()
+ax.set_xlabel('Residuals')
+plt.title("Residuals Distribution - Random Forest Regressor")
+plt.show()
+
+
+
+################################################################
+#Model 3: K-Nearest Neighbors (KNN)
+# Define predictors and outcome
+predictors = ['x2_house_age', 'x3_distance_to_the_nearest_mrt_station',
+              'x4_number_of_convenience_stores', 'x5_latitude', 'x6_longitude']
+outcome = 'y_house_price_of_unit_area'
+
+# Split original data into train and validation sets
+train_data, valid_data = train_test_split(houseprice_df, test_size=0.4, random_state=1)
+
+# Fit scalers separately for predictors and outcome on training data only
+X_scaler = StandardScaler()
+y_scaler = StandardScaler()
+
+# Fit on training data
+X_scaler.fit(train_data[predictors])
+y_scaler.fit(train_data[[outcome]])
+
+# Normalize full dataset (but based on training scalers only)
+house_norm = pd.DataFrame(
+    X_scaler.transform(houseprice_df[predictors]),
+    columns=[f'z_{col}' for col in predictors],
+    index=houseprice_df.index
+)
+
+# Add normalized outcome
+house_norm['z_' + outcome] = y_scaler.transform(houseprice_df[[outcome]])
+
+# Retrieve normalized train and validation sets using original split indices
+trainNorm = house_norm.loc[train_data.index]
+validNorm = house_norm.loc[valid_data.index]
+
+# Define normalized predictors and target
+normalized_predictors = [f'z_{col}' for col in predictors]
+normalized_outcome = f'z_{outcome}'
+
+# Partition the normalized data
+train_X = trainNorm[normalized_predictors]
+train_y = trainNorm[normalized_outcome]
+valid_X = validNorm[normalized_predictors]
+valid_y = validNorm[normalized_outcome]
+
+print("Train shape:", train_X.shape, train_y.shape)
+print("Validation shape:", valid_X.shape, valid_y.shape)
+
+
+
+# Variable selection using GridSearchCV
+
+pipe = Pipeline([
+    ('select', SelectKBest(score_func=f_regression)),
+    ('knn', KNeighborsRegressor())
+])
+
+param_grid = {
+    'select__k': [2, 3, 4, 5],            # Try selecting 2 to 5 top features
+    'knn__n_neighbors': [2, 3, 5, 7, 10]  # Try different k values for KNN
+}
+
+grid = GridSearchCV(pipe, param_grid, cv=5, scoring='neg_mean_squared_error')
+grid.fit(train_X, train_y)
+
+print("Best number of features:", grid.best_params_['select__k'])
+print("Best K value for KNN:", grid.best_params_['knn__n_neighbors'])
+print("Best CV score (neg MSE):", grid.best_score_)
+
+
+
+# Refit with best parameters
+best_k = grid.best_params_['select__k']
+best_model = grid.best_estimator_
+
+# Save feature names before passing into the pipeline
+feature_names = train_X.columns.tolist()
+
+# Fit the selector on the full training set to view the selected features
+selector = best_model.named_steps['select']
+feature_mask = selector.get_support()
+selected_features = [feature for feature, keep in zip(feature_names, feature_mask) if keep]
+
+print("Selected features:", list(selected_features))
+
+
+#Train model on "selected_features"
+best_model.fit(train_X[selected_features], train_y)
+
+
+
+#Make Predictions on Training Data using "best_variables"
+train_pred = best_model.predict(train_X[selected_features])
+train_residuals = train_y - train_pred
+
+result = pd.DataFrame({'Predicted':train_pred ,'Actual': train_y,'Residual': train_y - train_pred})
+
+
+# Denormalize predictions and actuals
+train_pred_orig = y_scaler.inverse_transform(train_pred.reshape(-1, 1))
+train_y_orig = y_scaler.inverse_transform(train_y.values.reshape(-1, 1))
+
+
+
+#Evaluate the Model
+regressionSummary(train_y_orig ,train_pred_orig)
+
+
+# Visualization – Training Data
+train_y_orig = train_y_orig.ravel()
+train_pred_orig = train_pred_orig.ravel()
+
+# Plotting actual vs predicted values
+plt.figure()
+sns.scatterplot(x=train_y_orig, y=train_pred_orig, alpha=0.6, color='skyblue', edgecolor='k')
+
+# Reference line (perfect prediction line)
+min_val = min(train_y_orig.min(), train_pred_orig.min())
+max_val = max(train_y_orig.max(), train_pred_orig.max())
+plt.plot([min_val, max_val], [min_val, max_val], 'r--', label='Perfect Fit')
+
+# Labels and title
+plt.title("Training Data: Actual vs Predicted (KNN)", fontsize=14)
+plt.xlabel("Actual House Price", fontsize=12)
+plt.ylabel("Predicted House Price", fontsize=12)
+
+# Additional plot features
+plt.grid(True, linestyle='--', alpha=0.7)
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+
+
+# Recalculate residuals in original scale
+train_residuals_orig = train_y_orig - train_pred_orig
+
+# Create a result DataFrame (optional, for plotting consistency)
+result = pd.DataFrame({
+    'Actual': train_y_orig,
+    'Predicted': train_pred_orig,
+    'Residual': train_residuals_orig
+})
+
+# Plot Actual Training Data Distribution
+plt.figure()
+sns.histplot(result['Actual'], kde=True, color='skyblue')
+plt.xlabel('House Price per Unit Area', fontsize=12)
+plt.title("Actual Training Data Distribution - KNN", fontsize=14)
+plt.grid(True, linestyle='--', alpha=0.6)
+plt.tight_layout()
+plt.show()
+
+# Plot Predicted Training Data Distribution
+plt.figure()
+sns.histplot(result['Predicted'], kde=True, color='skyblue')
+plt.xlabel('House Price per Unit Area', fontsize=12)
+plt.title("Predicted Training Data Distribution - KNN", fontsize=14)
+plt.grid(True, linestyle='--', alpha=0.6)
+plt.tight_layout()
+plt.show()
+
+# Plot Training Residuals Distribution
+plt.figure()
+sns.histplot(result['Residual'], kde=True, color='skyblue')
+plt.xlabel('Residual', fontsize=12)
+plt.title("Training Residuals Distribution - KNN", fontsize=14)
+plt.grid(True, linestyle='--', alpha=0.6)
+plt.tight_layout()
+plt.show()
+
+
+#Make Predictions on Validation Data using "best_variables"
+valid_pred = best_model.predict(valid_X[selected_features])
+valid_residuals = valid_y - valid_pred
+
+result1 = pd.DataFrame({'Predicted':valid_pred ,'Actual': valid_y,'Residual': valid_y - valid_pred})
+
+
+# Denormalize predictions and actuals
+valid_pred_orig = y_scaler.inverse_transform(valid_pred.reshape(-1, 1))
+valid_y_orig = y_scaler.inverse_transform(valid_y.values.reshape(-1, 1))
+
+
+#Evaluate the Model
+regressionSummary(valid_y_orig, valid_pred_orig )
+
+
+# Ensure both arrays are reshaped to 1D if needed
+valid_y_orig = valid_y_orig.ravel()
+valid_pred_orig = valid_pred_orig.ravel()
+# Recalculate residuals in original scale
+valid_residuals_orig = valid_y_orig - valid_pred_orig
+
+# Create a result DataFrame for validation
+result1 = pd.DataFrame({
+    'Actual': valid_y_orig,
+    'Predicted': valid_pred_orig,
+    'Residual': valid_residuals_orig
+})
+
+# Plot 1: Actual vs Predicted for Validation Data
+plt.figure()
+sns.scatterplot(x=valid_y_orig, y=valid_pred_orig, alpha=0.6, color='skyblue', edgecolor='k')
+
+# Perfect prediction line
+min_val = min(valid_y_orig.min(), valid_pred_orig.min())
+max_val = max(valid_y_orig.max(), valid_pred_orig.max())
+plt.plot([min_val, max_val], [min_val, max_val], 'r--', label='Perfect Fit')
+
+plt.title("Validation Data: Actual vs Predicted (KNN)", fontsize=14)
+plt.xlabel("Actual House Price", fontsize=12)
+plt.ylabel("Predicted House Price", fontsize=12)
+plt.grid(True, linestyle='--', alpha=0.7)
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+
+
+# Plot Actual Validation Data Distribution
+plt.figure()
+sns.histplot(result1['Actual'], kde=True, color='skyblue')
+plt.xlabel('House Price per Unit Area', fontsize=12)
+plt.title("Actual Validation Data Distribution - KNN", fontsize=14)
+plt.grid(True, linestyle='--', alpha=0.6)
+plt.tight_layout()
+plt.show()
+
+# Plot Predicted Validation Data Distribution
+plt.figure()
+sns.histplot(result1['Predicted'], kde=True, color='skyblue')
+plt.xlabel('House Price per Unit Area', fontsize=12)
+plt.title("Predicted Validation Data Distribution - KNN", fontsize=14)
+plt.grid(True, linestyle='--', alpha=0.6)
+plt.tight_layout()
+plt.show()
+
+# Plot Residuals Distribution (Validation)
+plt.figure()
+sns.histplot(result1['Residual'], kde=True, color='skyblue')
+plt.xlabel('Residual', fontsize=12)
+plt.title("Validation Residuals Distribution - KNN", fontsize=14)
+plt.grid(True, linestyle='--', alpha=0.6)
+plt.tight_layout()
+plt.show()
+
+
+
+
