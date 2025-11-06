@@ -1,0 +1,89 @@
+!pip install pandasai
+!pip install pandasai openai
+import pandas as pd
+from pandasai import SmartDataframe
+from pandasai.llm import OpenAI
+import pandas as pd
+
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.tree import DecisionTreeRegressor, export_text
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error
+
+
+from sklearn.metrics import r2_score
+from sklearn.model_selection import GridSearchCV
+
+
+data = pd.read_csv('Real_estate _1.csv')
+data.head()
+
+llm = OpenAI(api_token="?????????????????????????")
+data = SmartDataframe(data, config ={"llm": llm})
+
+
+
+# Data cleaning and Preparation
+# Fixing inconsistent formatting
+house_price.chat('in column names replace whitespaces to "_" and change uppercase to lowercase')
+
+# Rename 'no' column to 'transaction_id'
+house_price.chat('Rename "no" to "Transaction_ID')
+
+# Checking for missing values in each column
+house_price.chat('is there a missing data in the dataset?')
+
+# Checking for duplicate rows
+house_price.chat('are the dublicates values in the dataset?')
+
+# Checking for data types
+house_price.chat('what are the data types of values?')
+
+
+# 2 - Data distribution and Outliers
+
+# Checking Data Distribution
+house_price.chat('Show data distribution of continius data. show it in tables')
+
+# Graphical representation of outliers to confirm outlier detection for "x3_distance_to_the_nearest_mrt_station" and "y_house_price_of_unit_area" variables
+#And checking for potential outliers in other variables
+house_price.chat('display all outliers of dataset in boxplots')
+
+#Count the outliers in each of the columns
+house_price.chat('count outliers in each column')
+
+house_price.chat('show 97th percentile of x3_distance_to_the_nearest_mrt_station column')
+
+# Replacing "x3_distance_to_the_nearest_mrt_station" outliers with 97th percentile.
+house_price.chat('replace outliers in "x3_distance_to_the_nearest_mrt_station" column with 97th percentile')
+
+house_price.chat('replace outliers in "x3_distance_to_the_nearest_mrt_station" column with 4435.033050000001')
+
+#Remove records with outliers in 'y_house_price_of_unit_area' column
+house_price.chat('what are the outliers of the y_house_price_of_unit_area column')
+
+# Removing 3 outliers from the "y_house_price_of_unit_area" column.
+# We can see that number of rows reduced to 411.
+house_price.chat('remove 3 outliers from the "y_house_price_of_unit_area" ')
+
+
+
+# Data Analysis for Data Understanding
+
+# Display descriptive statistics of the variables
+house_price.chat('Display descriptive statistics of the variables')
+
+
+house_price.chat('In boxplot calculate count, mean, std, min, 25% quartile, 50% quartile, 75% quartile and max values of the y_house_price_of_unit_area')
+
+# Generating and plotting the correlation matrix
+house_price.chat('Generate and plot the correlation matrix')
+
+house_price.chat('is the a correlation amoung the variables?')
+
+house_price.chat('show this correlation in a table')
+
+
+
+
