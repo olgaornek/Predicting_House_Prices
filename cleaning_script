@@ -1,0 +1,149 @@
+#Importing required libraries
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from sklearn.model_selection import train_test_split
+from sklearn import preprocessing
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.feature_selection import RFECV
+from sklearn.neighbors import KNeighborsRegressor # KNN for regression
+from sklearn.model_selection import GridSearchCV ,cross_val_score# For hyperparameter tuning
+from sklearn.metrics import mean_squared_error,mean_absolute_error, r2_score # For model evaluation
+from sklearn.pipeline import Pipeline
+from sklearn.feature_selection import SelectKBest, f_regression
+
+!pip install dmba
+from dmba import regressionSummary, backward_elimination, AIC_score
+
+
+# STEP 1: LOAD AND PREVIEW DATA
+houseprice_df = pd.read_csv('Real estate.csv')
+houseprice_df.head()
+
+#Note:
+#No: Transaction ID
+#X1 transaction date: Date of the house purchase
+#X2 house age: The age of the house in months
+#X3 distance to the nearest MRT station: Distance to nearest MRT station in meters
+#X4 number of convenience stores: Number of convenience stores near the house
+#X5 latitude: Latitude of the house location
+#X6 longitude: Longitude of the house location
+#Y house price of unit area: House price per unit area
+
+
+
+#STEP 2: DATA CLEANING AND PREPARATION
+#Display dimensions of data frame
+houseprice_df.shape
+
+
+# Fixing inconsistent formatting
+houseprice_df.columns = houseprice_df.columns.str.strip().str.lower().str.replace(" ", "_")
+
+# Rename 'no' column to 'transaction_id'
+houseprice_df.rename(columns={'no': 'transaction_id'}, inplace=True)
+
+# Display the updated DataFrame
+houseprice_df.head(20)
+
+
+# Checking for missing values in each column
+houseprice_df.isnull().sum()
+
+#Note: No missing values found
+
+
+# Checking for duplicate rows
+print("\nDuplicate rows found:")
+houseprice_df.duplicated().sum()
+
+#Note: No duplicate records found
+
+
+# Checking for data types
+houseprice_df.dtypes
+
+#Note: All column's datatypes are appropriate
+
+
+# Checking Outliers and Data Distribution
+# Display descriptive statistics to get an overview of the data
+# distribution and identify potential outliers (e.g., min/max values far from quartiles).
+print("\n--- Descriptive Statistics of Numerical Columns ---")
+print(houseprice_df.describe())
+
+#Note: "x3_distance_to_the_nearest_mrt_station" and "y_house_price_of_unit_area" variables seemingly have outliers based on their min and max
+#values respectively. 'transaction_id' and 'x1_transaction_date' columns are ignored because the former is not a potential predictor of the house
+#price variable and the latter is a potential predictor but has notable inconsistent and inaccuracte data. Hence, instead of this varible we will
+#consider 'x2_house_age' variable because it is saying the same story as transaction date variable but is more accurate and consistent.
+
+
+# Graphical representation of outliers to confirm outlier detection for "x3_distance_to_the_nearest_mrt_station" and "y_house_price_of_unit_area" variables
+#And checking for potential outliers in other variables
+columns_to_plot = ['x2_house_age','x3_distance_to_the_nearest_mrt_station','x4_number_of_convenience_stores','x5_latitude','x6_longitude', 'y_house_price_of_unit_area']
+plt.figure(figsize=(15, 8))
+
+# Create one boxplot per column
+for i, col in enumerate(columns_to_plot):
+    ax = plt.subplot(2, 3, i + 1)
+    sns.boxplot(y=houseprice_df[col], color="skyblue", ax=ax)
+    ax.set_title(f'Boxplot: {col}', fontsize=10)
+    ax.set_ylabel('')
+
+plt.tight_layout()
+plt.show()
+
+#Note: 'x3_distance_to_the_nearest_mrt_station','x5_latitude','x6_longitude', 'y_house_price_of_unit_area' variables are confirmed to have outliers
+
+
+#Count the outliers in each of the columns
+# Function to count outliers using IQR method
+# Updated function to return outlier values
+def get_outliers(series):
+    Q1 = series.quantile(0.25)
+    Q3 = series.quantile(0.75)
+    IQR = Q3 - Q1
+    lower_bound = Q1 - 1.5 * IQR
+    upper_bound = Q3 + 1.5 * IQR
+    outliers = series[(series < lower_bound) | (series > upper_bound)]
+    return outliers
+
+# Apply to selected columns
+for col in ['x3_distance_to_the_nearest_mrt_station', 'x5_latitude', 'x6_longitude', 'y_house_price_of_unit_area']:
+    outliers = get_outliers(houseprice_df[col])
+    print(f"\nNumber of outliers in {col}: {outliers.count()}")
+    print(f"Outlier values in {col}:\n{outliers.values}")
+
+#Outliers Handling:
+#'x5_latitude' and 'x6_longitude' columns have outliers but they are valid values for location of the houses. Removing or altering
+#them can distort information and analysis. Hence, the outliers of these two variables will remain in the dataset without any changes.
+#Other 2 outliers will be handled in the upcoming 2 code cells:
+#The outliers in 'x3_distance_to_the_nearest_mrt_station' column will be handled through winsorizing(capping) to reduce extreme impact but keep the
+#data points valid and the outliers in 'y_house_price_of_unit_area' column will be eliminated from dataset since the outliers are very few(3)in number
+
+
+# Function to cap values above a specified upper percentile for 'x3_distance_to_the_nearest_mrt_station' column
+def cap_outliers(series, upper_percentile=0.97):
+    upper_bound = series.quantile(upper_percentile)
+    return series.clip(upper=upper_bound)
+
+# Apply capping
+houseprice_df['x3_distance_to_the_nearest_mrt_station'] = cap_outliers(houseprice_df['x3_distance_to_the_nearest_mrt_station'])
+print(f"{'x3_distance_to_the_nearest_mrt_station'}: capped at 97th percentile = {houseprice_df['x3_distance_to_the_nearest_mrt_station'].max()}")
+
+
+#Remove records with outliers in 'y_house_price_of_unit_area' column
+# Define outlier values to remove
+outlier_values = [78.3, 117.5, 78.0]
+
+# Remove rows where 'y_house_price_of_unit_area' has these values
+houseprice_df = houseprice_df[~houseprice_df['y_house_price_of_unit_area'].isin(outlier_values)]
+
+# Confirm removal
+print("Remaining rows after removing outliers:", len(houseprice_df))
+
+
